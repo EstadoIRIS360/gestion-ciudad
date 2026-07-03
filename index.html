@@ -375,6 +375,7 @@
     <p>Tareas · Errores · Vulnerabilidades</p>
   </div>
   <div class="header-right">
+    <button id="btn-formato" onclick="aplicarFormato()" style="display:none;background:#2E5590;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-right:12px">🎨 Aplicar formato Sheets</button>
     <span class="status-dot" id="status-dot"></span>
     <span class="status-txt" id="status-txt">Conectando...</span>
   </div>
@@ -490,7 +491,6 @@
         <button class="filter-btn" onclick="setFilter('Error')">Errores</button>
         <button class="filter-btn" onclick="setFilter('Vulnerabilidad')">Vulnerab.</button>
         <button class="btn-sm" style="background:var(--gray);color:var(--navy);border:1.5px solid var(--border)" onclick="loadData()">🔄</button>
-        <button class="btn-sm" style="background:#1B2A4A;color:#fff;border:none" onclick="aplicarFormato()" id="btn-formato" title="Aplicar colores al Google Sheets">🎨 Formato</button>
       </div>
       <div class="table-wrap">
         <table id="main-table">
@@ -704,6 +704,7 @@ function showApp() {
   document.getElementById('app-section').style.display = 'block';
   document.getElementById('status-dot').style.background = '#4CAF50';
   document.getElementById('status-txt').textContent = 'Conectado';
+  document.getElementById('btn-formato').style.display = 'block';
 }
 
 // ── Sheets helpers ──
