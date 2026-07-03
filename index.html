@@ -779,12 +779,45 @@ async function appendRow(sheet, values) {
       nextRow = 3;
     }
     const lastCol = sheet === 'Pendientes' ? 'G' : 'I';
+    const numCols = sheet === 'Pendientes' ? 7 : 9;
+
+    // Escribir datos
     await gapi.client.sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${sheet}!A${nextRow}:${lastCol}${nextRow}`,
       valueInputOption: 'USER_ENTERED',
       resource: { values: [values] }
     });
+
+    // Aplicar bordes y formato a la nueva fila
+    const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+    const sheetObj = meta.result.sheets.find(s => s.properties.title === sheet);
+    if (sheetObj) {
+      const sheetId = sheetObj.properties.sheetId;
+      const rowIdx = nextRow - 1;
+      const borderStyle = { style:'SOLID', width:1, color:{ red:0.784, green:0.816, blue:0.863 } };
+      await gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        resource: { requests: [
+          // Bordes en la fila
+          { repeatCell: {
+            range: { sheetId, startRowIndex:rowIdx, endRowIndex:rowIdx+1, startColumnIndex:0, endColumnIndex:numCols },
+            cell: { userEnteredFormat: {
+              borders: { top:borderStyle, bottom:borderStyle, left:borderStyle, right:borderStyle },
+              textFormat: { fontFamily:'Arial', fontSize:10 },
+              verticalAlignment: 'MIDDLE'
+            }},
+            fields: 'userEnteredFormat(borders,textFormat,verticalAlignment)'
+          }},
+          // Alto de fila
+          { updateDimensionProperties: {
+            range: { sheetId, dimension:'ROWS', startIndex:rowIdx, endIndex:rowIdx+1 },
+            properties: { pixelSize: 22 },
+            fields: 'pixelSize'
+          }}
+        ]}
+      });
+    }
   } catch(e) {
     const msg = e.result?.error?.message || e.message || JSON.stringify(e);
     console.error('appendRow error:', msg);
