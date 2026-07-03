@@ -571,15 +571,26 @@ function showApp() {
 async function getRows(sheet) {
   const r = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${sheet}!A3:I1000`
+    range: `${sheet}!A3:I500`
   });
   return (r.result.values || []).filter(row => row.some(c => c && c.trim()));
 }
 
 async function appendRow(sheet, values) {
-  await gapi.client.sheets.spreadsheets.values.append({
+  // Buscar primera fila vacía desde fila 3
+  let existing;
+  try {
+    existing = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${sheet}!A3:A500`
+    });
+  } catch(e) { existing = { result: { values: [] } }; }
+  const rows = existing.result.values || [];
+  const nextRow = rows.length + 3;
+  const lastCol = sheet === 'Pendientes' ? 'G' : 'I';
+  await gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
-    range: `${sheet}!A1`,
+    range: `${sheet}!A${nextRow}:${lastCol}${nextRow}`,
     valueInputOption: 'USER_ENTERED',
     resource: { values: [values] }
   });
@@ -588,7 +599,7 @@ async function appendRow(sheet, values) {
 async function findRowIndex(sheet, id) {
   const r = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${sheet}!A3:A1000`
+    range: `${sheet}!A3:A500`
   });
   const vals = r.result.values || [];
   for (let i = 0; i < vals.length; i++) {
