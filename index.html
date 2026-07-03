@@ -602,6 +602,33 @@ async function aplicarFormato() {
         fields: 'gridProperties.frozenRowCount'
       }});
 
+      // Bordes en toda la tabla (filas 1-500)
+      const borderStyle = {
+        style: 'SOLID',
+        width: 1,
+        color: { red: 0.784, green: 0.816, blue: 0.863 }
+      };
+      const borderStyleThick = {
+        style: 'SOLID',
+        width: 2,
+        color: { red: 0.106, green: 0.165, blue: 0.290 }
+      };
+      requests.push({ repeatCell: {
+        range: { sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols },
+        cell: { userEnteredFormat: {
+          borders: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle }
+        }},
+        fields: 'userEnteredFormat.borders'
+      }});
+      // Borde grueso en cabecera
+      requests.push({ repeatCell: {
+        range: { sheetId, startRowIndex:1, endRowIndex:2, startColumnIndex:0, endColumnIndex:numCols },
+        cell: { userEnteredFormat: {
+          borders: { top: borderStyleThick, bottom: borderStyleThick, left: borderStyleThick, right: borderStyleThick }
+        }},
+        fields: 'userEnteredFormat.borders'
+      }});
+
       // Formato condicional — Tipo Tarea (col B = índice 1)
       const condTipo = (sheetId, colIdx, valor, color) => ({
         addConditionalFormatRule: { rule: {
@@ -634,24 +661,10 @@ async function aplicarFormato() {
       requests.push(condTipo(sheetId, 4, 'Media', C.mediaB));
       requests.push(condTipo(sheetId, 4, 'Baja',  C.bajaB));
 
-      // Tipo (col 1) — MÁXIMA prioridad (se añade al final con index:0 para quedar primero)
-      requests.push(condTipo(sheetId, 1, 'Vulnerabilidad', C.vulnB));
-      requests.push(condTipo(sheetId, 1, 'Error',          C.errorB));
+      // Tipo (col 1) — solo colorea la celda de Tipo
       requests.push(condTipo(sheetId, 1, 'Tarea',          C.tareaB));
-
-      // Color de fondo de toda la fila según Tipo — MÁXIMA prioridad
-      const condFilaCompleta = (sheetId, valor, color, colTipo) => ({
-        addConditionalFormatRule: { rule: {
-          ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
-          booleanRule: {
-            condition: { type:'CUSTOM_FORMULA', values:[{ userEnteredValue: `=$B3="${valor}"` }] },
-            format: { backgroundColor: rgb(color) }
-          }
-        }, index: 0 }
-      });
-      requests.push(condFilaCompleta(sheetId, 'Vulnerabilidad', C.vulnB));
-      requests.push(condFilaCompleta(sheetId, 'Error',          C.errorB));
-      requests.push(condFilaCompleta(sheetId, 'Tarea',          C.tareaB));
+      requests.push(condTipo(sheetId, 1, 'Error',          C.errorB));
+      requests.push(condTipo(sheetId, 1, 'Vulnerabilidad', C.vulnB));
 
       return requests;
     };
@@ -724,7 +737,7 @@ function maybeEnable() {
 }
 function startAuth() {
   if (!gapiInited || !gisInited) { toast('Cargando librerías...', ''); return; }
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  tokenClient.requestAccessToken({ prompt: '' });
 }
 function showApp() {
   document.getElementById('auth-section').style.display = 'none';
