@@ -569,11 +569,15 @@ function showApp() {
 
 // ── Sheets helpers ──
 async function getRows(sheet) {
-  const r = await gapi.client.sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${sheet}!A3:I500`
-  });
-  return (r.result.values || []).filter(row => row.some(c => c && c.trim()));
+  try {
+    const r = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${sheet}!A3:I500`
+    });
+    return (r.result.values || []).filter(row => row.some(c => c && String(c).trim()));
+  } catch(e) {
+    return [];
+  }
 }
 
 async function appendRow(sheet, values) {
