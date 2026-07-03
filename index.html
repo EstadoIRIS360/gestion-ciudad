@@ -572,42 +572,58 @@ async function getRows(sheet) {
   try {
     const r = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${sheet}!A3:I200`
+      range: `${sheet}!A3:I200`,
+      majorDimension: 'ROWS'
     });
     const rows = r.result.values || [];
-    // Filtrar filas que tengan al menos un valor real en las primeras 3 columnas
-    return rows.filter(row => row[0] || row[1] || row[2]);
+    return rows.filter(row => row && (row[0] || row[1] || row[2]));
   } catch(e) {
-    console.log('getRows vacío para', sheet, e.message);
+    // 400 = rango vacío, es normal cuando no hay datos
     return [];
   }
 }
 
 async function appendRow(sheet, values) {
-  // Usar append con rango desde fila 3 para respetar título y cabecera
   try {
-    await gapi.client.sheets.spreadsheets.values.append({
+    // Primero obtenemos cuántas filas con datos hay
+    let nextRow = 3;
+    try {
+      const r = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${sheet}!A3:A200`,
+        majorDimension: 'ROWS'
+      });
+      const rows = (r.result.values || []).filter(row => row && row[0]);
+      nextRow = rows.length + 3;
+    } catch(e) {
+      nextRow = 3;
+    }
+    const lastCol = sheet === 'Pendientes' ? 'G' : 'I';
+    await gapi.client.sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${sheet}!A3`,
+      range: `${sheet}!A${nextRow}:${lastCol}${nextRow}`,
       valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
       resource: { values: [values] }
     });
   } catch(e) {
-    console.error('appendRow error:', e);
-    throw new Error(e.result?.error?.message || e.message || 'Error escribiendo en Sheets');
+    const msg = e.result?.error?.message || e.message || JSON.stringify(e);
+    console.error('appendRow error:', msg);
+    throw new Error(msg);
   }
 }
 
 async function findRowIndex(sheet, id) {
-  const r = await gapi.client.sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `${sheet}!A3:A500`
-  });
-  const vals = r.result.values || [];
-  for (let i = 0; i < vals.length; i++) {
-    if (vals[i][0] === id) return i + 3;
-  }
+  try {
+    const r = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${sheet}!A3:A200`,
+      majorDimension: 'ROWS'
+    });
+    const vals = r.result.values || [];
+    for (let i = 0; i < vals.length; i++) {
+      if (vals[i] && vals[i][0] === id) return i + 3;
+    }
+  } catch(e) { /* hoja vacía */ }
   return -1;
 }
 
