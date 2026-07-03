@@ -518,7 +518,7 @@
 
 <script>
 const CLIENT_ID     = '808344962865-nkgkr6vce5bpnibhjd5uodljdq9ejt0g.apps.googleusercontent.com';
-const SHEET_ID      = '1tmetj7dmLD1PeF2Y2mGuMNTMS7jxK6e7';
+const SHEET_ID      = '1SoyJ2GKbHPGdDBJ-UJ92_B7Dwwl2zzHX8iRLpZ2I0TI';
 const SCOPES        = 'https://www.googleapis.com/auth/spreadsheets';
 const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 
@@ -572,32 +572,31 @@ async function getRows(sheet) {
   try {
     const r = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${sheet}!A3:I500`
+      range: `${sheet}!A3:I200`
     });
-    return (r.result.values || []).filter(row => row.some(c => c && String(c).trim()));
+    const rows = r.result.values || [];
+    // Filtrar filas que tengan al menos un valor real en las primeras 3 columnas
+    return rows.filter(row => row[0] || row[1] || row[2]);
   } catch(e) {
+    console.log('getRows vacío para', sheet, e.message);
     return [];
   }
 }
 
 async function appendRow(sheet, values) {
-  // Buscar primera fila vacía desde fila 3
-  let existing;
+  // Usar append con rango desde fila 3 para respetar título y cabecera
   try {
-    existing = await gapi.client.sheets.spreadsheets.values.get({
+    await gapi.client.sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${sheet}!A3:A500`
+      range: `${sheet}!A3`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      resource: { values: [values] }
     });
-  } catch(e) { existing = { result: { values: [] } }; }
-  const rows = existing.result.values || [];
-  const nextRow = rows.length + 3;
-  const lastCol = sheet === 'Pendientes' ? 'G' : 'I';
-  await gapi.client.sheets.spreadsheets.values.update({
-    spreadsheetId: SHEET_ID,
-    range: `${sheet}!A${nextRow}:${lastCol}${nextRow}`,
-    valueInputOption: 'USER_ENTERED',
-    resource: { values: [values] }
-  });
+  } catch(e) {
+    console.error('appendRow error:', e);
+    throw new Error(e.result?.error?.message || e.message || 'Error escribiendo en Sheets');
+  }
 }
 
 async function findRowIndex(sheet, id) {
