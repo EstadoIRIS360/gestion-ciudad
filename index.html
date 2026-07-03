@@ -613,22 +613,16 @@ async function aplicarFormato() {
         }, index: 0 }
       });
 
-      // Tipo (col 1)
-      requests.push(condTipo(sheetId, 1, 'Tarea',          C.tareaB));
-      requests.push(condTipo(sheetId, 1, 'Error',          C.errorB));
-      requests.push(condTipo(sheetId, 1, 'Vulnerabilidad', C.vulnB));
+      // Filas alternas — PRIMERO (índice 0, menor prioridad, se añade antes)
+      requests.push({ addConditionalFormatRule: { rule: {
+        ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
+        booleanRule: {
+          condition: { type:'CUSTOM_FORMULA', values:[{ userEnteredValue: `=ISEVEN(ROW())` }] },
+          format: { backgroundColor: rgb(C.altRow) }
+        }
+      }, index: 0 }});
 
-      // Prioridad (col 4)
-      requests.push(condTipo(sheetId, 4, 'Alta',  C.altaB));
-      requests.push(condTipo(sheetId, 4, 'Media', C.mediaB));
-      requests.push(condTipo(sheetId, 4, 'Baja',  C.bajaB));
-
-      // Estado (col 6)
-      requests.push(condTipo(sheetId, 6, 'Abierta',     C.abierB));
-      requests.push(condTipo(sheetId, 6, 'En progreso', C.mediaB));
-      requests.push(condTipo(sheetId, 6, 'Resuelta',    C.greenB));
-
-      // Fila completa verde si Estado = Resuelta
+      // Fila completa verde si Estado = Resuelta — SEGUNDA prioridad
       requests.push({ addConditionalFormatRule: { rule: {
         ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
         booleanRule: {
@@ -637,14 +631,34 @@ async function aplicarFormato() {
         }
       }, index: 0 }});
 
-      // Filas alternas fondo gris suave (para filas sin datos aún)
-      requests.push({ addConditionalFormatRule: { rule: {
-        ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
-        booleanRule: {
-          condition: { type:'CUSTOM_FORMULA', values:[{ userEnteredValue: `=ISEVEN(ROW())` }] },
-          format: { backgroundColor: rgb(C.altRow) }
-        }
-      }, index: 0 }});
+      // Estado (col 6) — TERCERA prioridad
+      requests.push(condTipo(sheetId, 6, 'Abierta',     C.abierB));
+      requests.push(condTipo(sheetId, 6, 'En progreso', C.mediaB));
+      requests.push(condTipo(sheetId, 6, 'Resuelta',    C.greenB));
+
+      // Prioridad (col 4) — CUARTA prioridad
+      requests.push(condTipo(sheetId, 4, 'Alta',  C.altaB));
+      requests.push(condTipo(sheetId, 4, 'Media', C.mediaB));
+      requests.push(condTipo(sheetId, 4, 'Baja',  C.bajaB));
+
+      // Tipo (col 1) — MÁXIMA prioridad (se añade al final con index:0 para quedar primero)
+      requests.push(condTipo(sheetId, 1, 'Vulnerabilidad', C.vulnB));
+      requests.push(condTipo(sheetId, 1, 'Error',          C.errorB));
+      requests.push(condTipo(sheetId, 1, 'Tarea',          C.tareaB));
+
+      // Color de fondo de toda la fila según Tipo — MÁXIMA prioridad
+      const condFilaCompleta = (sheetId, valor, color, colTipo) => ({
+        addConditionalFormatRule: { rule: {
+          ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
+          booleanRule: {
+            condition: { type:'CUSTOM_FORMULA', values:[{ userEnteredValue: `=$B3="${valor}"` }] },
+            format: { backgroundColor: rgb(color) }
+          }
+        }, index: 0 }
+      });
+      requests.push(condFilaCompleta(sheetId, 'Vulnerabilidad', C.vulnB));
+      requests.push(condFilaCompleta(sheetId, 'Error',          C.errorB));
+      requests.push(condFilaCompleta(sheetId, 'Tarea',          C.tareaB));
 
       return requests;
     };
