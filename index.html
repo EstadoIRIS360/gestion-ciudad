@@ -613,14 +613,7 @@ async function aplicarFormato() {
         }, index: 0 }
       });
 
-      // Filas alternas — PRIMERO (índice 0, menor prioridad, se añade antes)
-      requests.push({ addConditionalFormatRule: { rule: {
-        ranges: [{ sheetId, startRowIndex:2, endRowIndex:500, startColumnIndex:0, endColumnIndex:numCols }],
-        booleanRule: {
-          condition: { type:'CUSTOM_FORMULA', values:[{ userEnteredValue: `=ISEVEN(ROW())` }] },
-          format: { backgroundColor: rgb(C.altRow) }
-        }
-      }, index: 0 }});
+      // Filas alternas eliminadas — el color por tipo tiene prioridad total
 
       // Fila completa verde si Estado = Resuelta — SEGUNDA prioridad
       requests.push({ addConditionalFormatRule: { rule: {
